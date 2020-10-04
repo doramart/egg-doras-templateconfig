@@ -2,7 +2,7 @@
  * @Author: doramart 
  * @Date: 2019-09-23 14:44:21 
  * @Last Modified by: doramart
- * @Last Modified time: 2020-08-23 10:04:16
+ * @Last Modified time: 2020-10-04 22:38:18
  */
 
 const _ = require('lodash');
@@ -481,7 +481,12 @@ let TemplateConfigController = {
                 })
                 // console.log('---targetTemp---', targetTemp);
                 if (!_.isEmpty(targetTemp)) {
-                    await ctx.service.templateItem.removes((targetTemp.items).join(','));
+                    if (!_.isEmpty(targetTemp.items) && targetTemp.items.length > 0) {
+                        let currentIds = targetTemp.items.map((item) => {
+                            return item.id;
+                        });
+                        await ctx.service.templateItem.removes(currentIds.join(','));
+                    }
                     await ctx.service.contentTemplate.removes(targetTemp.id)
 
                     //删除模板文件夹

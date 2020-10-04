@@ -1,6 +1,6 @@
 {
   "name": "egg-doras-templateconfig",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "templateConfig",
   "eggPlugin": {
     "name": "doraTemplateConfig"
@@ -18,9 +18,7 @@
     "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "node-unzip-2": "^0.2.8",
-    
-    "stream-wormhole": "^1.1.0",
-    "xss": "^1.0.6"
+    "stream-wormhole": "^1.1.0"
   },
   "devDependencies": {
     "autod": "^3.0.1",
