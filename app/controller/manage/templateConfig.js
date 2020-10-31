@@ -2,7 +2,7 @@
  * @Author: doramart 
  * @Date: 2019-09-23 14:44:21 
  * @Last Modified by: doramart
- * @Last Modified time: 2020-08-23 10:04:16
+ * @Last Modified time: 2020-10-25 18:21:40
  */
 
 const _ = require('lodash');
@@ -124,8 +124,7 @@ let TemplateConfigController = {
         }
     },
 
-    async addTemplateitem(app) {
-
+    async addTemplateItem(ctx, app) {
 
         try {
 
@@ -134,15 +133,13 @@ let TemplateConfigController = {
                 name: fields.name,
                 forder: fields.forder,
                 isDefault: fields.isDefault,
+                temp_id: fields.temp_id,
                 comments: fields.comments
             }
 
             ctx.validate(templateConfigRule(ctx), formObj);;
 
             let newTemplateConfigItems = await ctx.service.templateItem.create(formObj);
-
-            let defaultTemp = await this._getDefaultTempInfo(ctx, app);
-            await ctx.service.contentTemplate.addItems(defaultTemp.id, newTemplateConfigItems.id);
 
             ctx.helper.renderSuccess(ctx, {
                 data: {
@@ -158,7 +155,7 @@ let TemplateConfigController = {
         }
     },
 
-    async delTemplateitem(app) {
+    async delTemplateItem(ctx, app) {
 
         try {
             let errMsg = '';
@@ -168,9 +165,6 @@ let TemplateConfigController = {
             if (errMsg) {
                 throw new Error(errMsg);
             }
-
-            let defaultTemp = await this._getDefaultTempInfo(ctx, app);
-            await ctx.service.contentTemplate.removeItems(defaultTemp.id, ctx.query.ids);
 
             await ctx.service.templateItem.removes(ctx.query.ids);
 
@@ -331,15 +325,11 @@ let TemplateConfigController = {
                                                 } else {
                                                     let oldTemp = await ctx.service.templateItem.item({
                                                         query: {
-                                                            [app.Sequelize.Op.or]: [{
-                                                                'name': tempInfoData.name
-                                                            }, {
-                                                                'alias': tempInfoData.alias
-                                                            }]
+                                                            'name': tempInfoData.name
                                                         }
                                                     });
                                                     if (!_.isEmpty(oldTemp)) {
-                                                        throw new Error("模板名称或key已存在，请修改后重试！");
+                                                        throw new Error("模板名称已存在，请修改后重试！");
                                                     }
                                                     //复制静态文件到公共目录
                                                     let temp_static_forder = app.config.temp_static_forder;
@@ -422,7 +412,7 @@ let TemplateConfigController = {
 
 
         try {
-            if (!tempId || !shortid.isValid(tempId)) {
+            if (!tempId) {
                 throw new Error(ctx.__("validate_error_params"));
             }
             // 重置所有模板
@@ -431,7 +421,7 @@ let TemplateConfigController = {
             }, {
                 'using': true
             })
-            await ctx.service.contentTemplate.update(tempId, {
+            await ctx.service.contentTemplate.update(Number(tempId), {
                 'using': true
             })
 
@@ -481,7 +471,12 @@ let TemplateConfigController = {
                 })
                 // console.log('---targetTemp---', targetTemp);
                 if (!_.isEmpty(targetTemp)) {
-                    await ctx.service.templateItem.removes((targetTemp.items).join(','));
+                    if (!_.isEmpty(targetTemp.items) && targetTemp.items.length > 0) {
+                        let currentIds = targetTemp.items.map((item) => {
+                            return item.id;
+                        });
+                        await ctx.service.templateItem.removes(currentIds.join(','));
+                    }
                     await ctx.service.contentTemplate.removes(targetTemp.id)
 
                     //删除模板文件夹
