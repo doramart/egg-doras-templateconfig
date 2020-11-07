@@ -86,20 +86,21 @@ var siteFunc = {
                 console.log("解压完成!!");
                 //解压完成处理入库操作
                 if (installType == 'create') {
-                    let newTempItem = await ctx.service.templateItem.create({
-                        forder: "2-stage-default",
-                        name: 'Default',
-                        isDefault: true,
-                    });
-
                     let newTempObj = _.assign({}, tempObj, {
                         using: false,
                         items: [],
                         shopTempId: tempObj.id,
                         version: (tempObj.version).join()
                     });
-                    newTempObj.items.push(newTempItem.id);
-                    await ctx.service.contentTemplate.create(newTempObj);
+                    delete newTempObj._id;
+                    let thisTemp = await ctx.service.contentTemplate.create(newTempObj);
+                    await ctx.service.templateItem.create({
+                        forder: "2-stage-default",
+                        name: 'Default',
+                        isDefault: true,
+                        temp_id: thisTemp.id
+                    });
+
                 } else if (installType == 'update') {
                     if (ctx.query.localTempId) {
                         delete tempObj.id;
@@ -121,18 +122,18 @@ var siteFunc = {
     async copyThemeToStaticForder(ctx, app, tempAlias, DOWNLOAD_DIR) {
         let temp_static_forder = app.config.temp_static_forder;
         let fromPath = app.config.temp_view_forder + tempAlias + '/dist/*';
-        let assetsPath = app.config.temp_view_forder + tempAlias + '/assets/';
+        let assetsPath = app.config.temp_view_forder + tempAlias + '/assets';
         let targetPath = temp_static_forder + tempAlias;
-        let targetAssetPath = path.join(app.config.baseDir, `app/assets/${tempAlias}`);
+        let targetAssetPath = path.join(app.config.baseDir, `app/assets`);
         // 拷贝静态资源
         if (!fs.existsSync(targetPath)) {
             shell.mkdir('-p', targetPath);
         }
-        shell.cp('-R', fromPath, targetPath);
+        shell.mv('-n', fromPath, targetPath);
         if (!fs.existsSync(targetAssetPath)) {
             shell.mkdir('-p', targetAssetPath);
         }
-        shell.cp('-R', assetsPath, targetAssetPath);
+        shell.mv('-f', assetsPath, targetAssetPath + `/${tempAlias}`);
         // 拷贝静态资源源文件
         // ctx.helper.copyForder(fromPath, targetPath);
         // ctx.helper.copyForder(assetsPath, targetAssetPath);
